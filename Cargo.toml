@@ -1,0 +1,9 @@
+[package]
+name = "dump-diff"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+capstone = "0.12.0"
+clap = { version = "4.5.4", features = ["derive"] }
+clap-num = "1.1.1"
