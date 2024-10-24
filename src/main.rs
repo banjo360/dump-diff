@@ -1,3 +1,5 @@
+use std::io::SeekFrom;
+use std::io::Seek;
 use std::io::Read;
 use std::fs::File;
 use clap::Parser;
@@ -8,17 +10,21 @@ use capstone::prelude::*;
 #[derive(Parser, Debug)]
 #[command(author = None, version = None, about = None, long_about = None)]
 struct Args {
-    /// Target
+    /// Filename + optional offset
     #[arg(short, long)]
     target: String,
 
-    /// Current
+    /// Filename + optional offset
     #[arg(short, long)]
     current: String,
 
-    /// Address
+    /// Virtual address
     #[arg(short='x', long, value_parser=maybe_hex::<u32>)]
     addr: u32,
+
+    /// Number of bytes to compare (default: all)
+    #[arg(short, long)]
+    length: Option<u64>,
 
     /// Architecture
     #[arg(short, long)]
@@ -28,7 +34,7 @@ struct Args {
     #[arg(short, long)]
     mode: capstone::Mode,
 
-    /// Endianness
+    /// Endianness (default: little)
     #[arg(short, long)]
     endianness: Option<capstone::Endian>,
 }
@@ -38,9 +44,11 @@ fn main() {
     let args = Args::parse();
 
     let cs = Capstone::new_raw(args.arch, args.mode, capstone::NO_EXTRA_MODE, args.endianness).expect("Can't create capstone engine");
+    let (curr_file, curr_offset) = extract_offset(&args.current);
+    let (targ_file, targ_offset) = extract_offset(&args.target);
 
-    let current = disassemble(&cs, &args.current, args.addr);
-    let target = disassemble(&cs, &args.target, args.addr);
+    let current = disassemble(&cs, curr_file, curr_offset, args.length, args.addr);
+    let target = disassemble(&cs, targ_file, targ_offset, args.length, args.addr);
     let min_size = std::cmp::min(current.len(), target.len());
     let max_size = std::cmp::max(current.len(), target.len());
 
@@ -65,10 +73,28 @@ fn main() {
     }
 }
 
-fn disassemble(cs: &Capstone, file: &str, vram: u32) -> Vec<String> {
+fn extract_offset(filename: &str) -> (&str, u64) {
+    if filename.contains(':') {
+        let mut parts = filename.split(':');
+        let filename = parts.next().unwrap();
+        let offset = clap_num::maybe_hex::<u64>(parts.next().unwrap()).unwrap();
+        (filename, offset)
+    } else {
+        (filename, 0)
+    }
+}
+
+fn disassemble(cs: &Capstone, file: &str, offset: u64, len: Option<u64>, vram: u32) -> Vec<String> {
     let mut f = File::open(file).unwrap();
+    f.seek(SeekFrom::Start(offset)).unwrap();
+
     let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer).unwrap();
+    if let Some(len) = len {
+        let mut handle = f.take(len);
+        handle.read_to_end(&mut buffer).unwrap();
+    } else {
+        f.read_to_end(&mut buffer).unwrap();
+    };
 
     let insns = cs.disasm_all(&buffer, vram as u64).expect("Failed to disassemble");
 

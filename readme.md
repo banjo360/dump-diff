@@ -8,21 +8,22 @@ Crude diff tools for assembly binary blobs
 Usage: dump-diff [OPTIONS] --target <TARGET> --current <CURRENT> --addr <ADDR> --arch <ARCH> --mode <MODE>
 
 Options:
-  -t, --target <TARGET>          Target
-  -c, --current <CURRENT>        Current
-  -x, --addr <ADDR>              Address
+  -t, --target <TARGET>          Filename + optional offset
+  -c, --current <CURRENT>        Filename + optional offset
+  -x, --addr <ADDR>              Virtual address
+  -l, --length <LENGTH>          Number of bytes to compare (default: all)
   -a, --arch <ARCH>              Architecture
   -m, --mode <MODE>              Mode
-  -e, --endianness <ENDIANNESS>  Endianness
+  -e, --endianness <ENDIANNESS>  Endianness (default: little)
   -h, --help                     Print help
 ```
 
-- TARGET: the target binary
-- CURRENT: your current compiled code
+- TARGET: the target binary, optionally followed by a colon and an offset. `-t file.bin:0x42`.
+- CURRENT: your current compiled code, same as above.
 - ADDR: the (virtual) memory address where the code is located at.
 - ARCH: the [architecture](https://docs.rs/capstone/latest/capstone/enum.Arch.html)
 - MODE: the [mode](https://docs.rs/capstone/latest/capstone/enum.Mode.html)
-- ENDIANNESS: big or little (defaults: little)
+- ENDIANNESS: big or little
 
 ⚠️ WARNING ⚠️ The tool doesn't check the arch/mode tuple, so you can ask for ARM64 + RiscV64 (and it will panic).
 
