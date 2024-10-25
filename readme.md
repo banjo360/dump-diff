@@ -51,7 +51,7 @@ frsp f12, f0                  frsp f12, f0
 lfd f0, -0x3fb0(r10)          lfd f0, -0x3fb0(r10)
 lfs f13, 0x1580(r9)           lfs f13, 0x1580(r9)
 fmuls f12, f1, f12            fmuls f12, f1, f12
-fmsub f0, f12, f0, f31        fnmsub f0, f12, f0, f31       <===========
+fnmsub f0, f12, f0, f31       fnmsub f0, f12, f0, f31
 frsp f0, f0                   frsp f0, f0
 fcmpu cr6, f0, f13            fcmpu cr6, f0, f13
 blt cr6, 0x82184450           blt cr6, 0x82184450
