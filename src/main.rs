@@ -61,12 +61,12 @@ fn main() {
     }
 
     for i in min_size..max_size {
-        if current.len() < min_size {
+        if current.len() > i {
             print!("{}{}", current[i], " ".repeat(ALIGNMENT - current[i].len()));
         } else {
             print!("{}", " ".repeat(ALIGNMENT));
         }
-        if target.len() < min_size {
+        if target.len() > i {
             print!("{}", target[i]);
         }
         println!("");

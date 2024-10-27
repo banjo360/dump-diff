@@ -11,7 +11,7 @@ Options:
   -t, --target <TARGET>          Filename + optional offset
   -c, --current <CURRENT>        Filename + optional offset
   -x, --addr <ADDR>              Virtual address
-  -l, --length <LENGTH>          Number of bytes to compare (default: all)
+  -l, --length <LENGTH>          Number of bytes to compare (default: until EOF)
   -a, --arch <ARCH>              Architecture
   -m, --mode <MODE>              Mode
   -e, --endianness <ENDIANNESS>  Endianness (default: little)
