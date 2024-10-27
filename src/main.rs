@@ -52,6 +52,7 @@ fn main() {
     let min_size = std::cmp::min(current.len(), target.len());
     let max_size = std::cmp::max(current.len(), target.len());
 
+    println!("current:{}target:", " ".repeat(ALIGNMENT - "current:".len()));
     for i in 0..min_size {
         print!("{}{}{}", current[i], " ".repeat(ALIGNMENT - current[i].len()), target[i]);
         if current[i] != target[i] {
@@ -95,6 +96,7 @@ fn disassemble(cs: &Capstone, file: &str, offset: u64, len: Option<u64>, vram: u
     } else {
         f.read_to_end(&mut buffer).unwrap();
     };
+    assert!(buffer.len() != 0);
 
     let insns = cs.disasm_all(&buffer, vram as u64).expect("Failed to disassemble");
 
