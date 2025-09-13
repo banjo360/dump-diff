@@ -1,10 +1,10 @@
-use std::io::SeekFrom;
-use std::io::Seek;
-use std::io::Read;
-use std::fs::File;
+use capstone::prelude::*;
 use clap::Parser;
 use clap_num::maybe_hex;
-use capstone::prelude::*;
+use std::fs::File;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 
 /// Compare compiled assembly
 #[derive(Parser, Debug)]
@@ -39,11 +39,16 @@ struct Args {
     endianness: Option<capstone::Endian>,
 }
 
-const ALIGNMENT: usize = 30;
 fn main() {
     let args = Args::parse();
 
-    let cs = Capstone::new_raw(args.arch, args.mode, capstone::NO_EXTRA_MODE, args.endianness).expect("Can't create capstone engine");
+    let cs = Capstone::new_raw(
+        args.arch,
+        args.mode,
+        capstone::NO_EXTRA_MODE,
+        args.endianness,
+    )
+    .expect("Can't create capstone engine");
     let (curr_file, curr_offset) = extract_offset(&args.current);
     let (targ_file, targ_offset) = extract_offset(&args.target);
 
@@ -52,20 +57,28 @@ fn main() {
     let min_size = std::cmp::min(current.len(), target.len());
     let max_size = std::cmp::max(current.len(), target.len());
 
-    println!("current:{}target:", " ".repeat(ALIGNMENT - "current:".len()));
+    let l_align = current.iter().map(String::len).max().unwrap() + 1;
+    let r_align = current.iter().map(String::len).max().unwrap() + 1;
+
+    println!("current:{}target:", " ".repeat(l_align - "current:".len()));
     for i in 0..min_size {
-        print!("{}{}{}", current[i], " ".repeat(ALIGNMENT - current[i].len()), target[i]);
+        print!(
+            "{}{}{}",
+            current[i],
+            " ".repeat(l_align - current[i].len()),
+            target[i]
+        );
         if current[i] != target[i] {
-            print!("{}<===========", " ".repeat(ALIGNMENT - target[i].len()));
+            print!("{}<===========", " ".repeat(r_align - target[i].len()));
         }
         println!("");
     }
 
     for i in min_size..max_size {
         if current.len() > i {
-            print!("{}{}", current[i], " ".repeat(ALIGNMENT - current[i].len()));
+            print!("{}{}", current[i], " ".repeat(l_align - current[i].len()));
         } else {
-            print!("{}", " ".repeat(ALIGNMENT));
+            print!("{}", " ".repeat(r_align));
         }
         if target.len() > i {
             print!("{}", target[i]);
@@ -98,13 +111,23 @@ fn disassemble(cs: &Capstone, file: &str, offset: u64, len: Option<u64>, vram: u
     };
     assert!(buffer.len() != 0);
 
-    let insns = cs.disasm_all(&buffer, vram as u64).expect("Failed to disassemble");
-
     let mut insts = vec![];
-    for i in insns.as_ref() {
-        let op_str = i.op_str().unwrap_or("");
-        let inst = i.mnemonic().unwrap();
-        insts.push(format!("{inst} {op_str}"));
+    for (pos, i) in buffer.chunks_exact(4).enumerate() {
+        let insns = cs
+            .disasm_count(i, (vram as u64) + (pos as u64), 1)
+            .expect("Failed to disassemble");
+        if insns.len() == 1 {
+            for i in insns.as_ref() {
+                let op_str = i.op_str().unwrap_or("");
+                let inst = i.mnemonic().unwrap();
+                insts.push(format!("{inst} {op_str}"));
+            }
+        } else if insns.len() == 0 {
+            assert_eq!(i, [0, 0, 0, 0]);
+            insts.push("0x00000000".into());
+        } else {
+            unreachable!();
+        }
     }
 
     insts
