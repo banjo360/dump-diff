@@ -108,6 +108,15 @@ fn main() {
         }
     }
 
+    if current_delete.len() > 0 || target_add.len() > 0 {
+        let (mut c, mut t) = synchronise(&current_delete, &target_add);
+
+        current.append(&mut c);
+        target.append(&mut t);
+    }
+
+    assert_eq!(current.len(), target.len());
+
     println!(
         "current:{} | target:",
         " ".repeat(l_align - "current:".len())
